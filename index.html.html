@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Circuit Explorer – DC and AC</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Segoe UI",Arial,sans-serif;background:linear-gradient(135deg,#f8fafc,#e0f2fe 50%,#e0e7ff);color:#0f172a;min-height:100vh;padding:20px}
+  .wrap{max-width:1150px;margin:0 auto;display:grid;gap:20px}
+  header{background:#020617;color:#fff;border-radius:24px;padding:24px 30px;display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:center;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+  .tag{color:#7dd3fc;font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;margin-bottom:6px}
+  h1{font-size:34px}
+  header p{color:#cbd5e1;margin-top:6px;max-width:560px}
+  .btns{display:flex;gap:8px}
+  button{border:0;border-radius:10px;padding:10px 18px;font-size:15px;font-weight:700;color:#fff;cursor:pointer}
+  .sw{background:#10b981} .sw.off{background:#f43f5e}
+  .rst{background:transparent;border:1px solid #475569}
+  .tabs{display:flex;gap:10px}
+  .tab{background:#fff;color:#334155;border:2px solid #cbd5e1;padding:12px 26px;font-size:16px;border-radius:14px}
+  .tab.active{background:#0f172a;color:#fff;border-color:#0f172a}
+  .grid{display:grid;grid-template-columns:1.45fr .75fr;gap:20px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .stack{display:grid;gap:20px;align-content:start}
+  .card{background:#fff;border-radius:24px;padding:24px;box-shadow:0 6px 20px rgba(0,0,0,.08)}
+  .card h2{font-size:20px} .sub{font-size:14px;color:#64748b}
+  .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .badge{padding:4px 12px;border-radius:99px;font-weight:700;font-size:14px;background:#d1fae5;color:#047857}
+  .badge.off{background:#ffe4e6;color:#be123c}
+  .stage{position:relative;background:#0f172a;border-radius:24px;overflow:hidden;aspect-ratio:760/390}
+  .stage svg{width:100%;height:100%;display:block}
+  .hud{position:absolute;left:16px;top:16px;background:rgba(255,255,255,.12);backdrop-filter:blur(8px);border-radius:16px;padding:10px 16px;color:#fff}
+  .hud small{color:#cbd5e1;font-size:13px}
+  .hud b{display:block;font-size:24px;font-weight:900;margin-top:2px;font-variant-numeric:tabular-nums}
+  .stat{position:absolute;left:16px;bottom:16px;background:rgba(2,6,23,.75);border-radius:16px;padding:10px 16px}
+  .stat b{display:block} .stat span{font-size:12px;color:#cbd5e1}
+  .ctrl{display:grid;gap:26px}
+  .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-weight:700}
+  .pill{font-family:Consolas,monospace;padding:4px 12px;border-radius:8px;font-weight:700}
+  .pv{background:#e0f2fe;color:#0369a1} .pr{background:#ede9fe;color:#6d28d9} .pf{background:#ccfbf1;color:#0f766e}
+  input[type=range]{width:100%;height:8px}
+  #v,#av{accent-color:#0ea5e9} #r,#ar{accent-color:#8b5cf6} #af{accent-color:#14b8a6}
+  .lim{display:flex;justify-content:space-between;font-size:12px;color:#94a3b8;margin-top:4px}
+  .note{font-size:12px;color:#64748b;margin-top:6px;line-height:1.4}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+  .tile{border-radius:24px;padding:16px 18px;color:#fff;box-shadow:0 6px 16px rgba(0,0,0,.15)}
+  .tile p{font-size:14px;font-weight:600;opacity:.85}
+  .tile .n{font-size:30px;font-weight:900;font-variant-numeric:tabular-nums}
+  .tile .u{font-size:20px;font-weight:700;margin-left:4px}
+  .tile small{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.8}
+  .t1{background:#0284c7}.t2{background:#7c3aed}.t3{background:#059669}.t4{background:#f97316}.t5{background:#0d9488}.t6{background:#4f46e5}
+  .calc{background:#020617;color:#fff}
+  .calc h3{font-size:18px;margin-bottom:14px;color:#fff}
+  .calc .lb{font-size:13px;color:#94a3b8}
+  .calc .f{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:4px}
+  .calc .f b{font-size:22px;color:#fde047;white-space:nowrap}
+  .calc .f span{font-family:Consolas,monospace;font-size:13px;color:#e2e8f0;text-align:right}
+  .calc hr{border:0;height:1px;background:#334155;margin:14px 0}
+  .bar{height:8px;border-radius:99px;background:#334155;margin-top:18px;overflow:hidden}
+  .barfill{height:100%;width:2%;background:linear-gradient(90deg,#fde047,#f97316,#dc2626);transition:width .2s}
+  .lessons{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;background:rgba(255,255,255,.85)}
+  @media(max-width:900px){.lessons{grid-template-columns:1fr}}
+  .ls{display:flex;gap:12px}
+  .num{width:36px;height:36px;border-radius:12px;background:#0f172a;color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .ls h3{font-size:16px} .ls p{font-size:14px;color:#475569;margin-top:4px;line-height:1.5}
+  .sw-arm{transition:y2 .25s}
+  .hidden{display:none !important}
+  canvas{width:100%;display:block;border-radius:16px;background:#0f172a}
+  .legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:#475569;margin-top:10px}
+  .legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+
+  .tab.quiz{margin-left:auto;background:#fef9c3;border-color:#eab308;color:#713f12}
+  .quizcard .qhead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+  .qbar{height:8px;background:#e2e8f0;border-radius:99px;overflow:hidden;margin:14px 0 18px}
+  .qbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#8b5cf6);transition:width .3s}
+  .qq{font-size:20px;font-weight:700;line-height:1.4}
+  .qtip{font-size:14px;color:#0369a1;background:#e0f2fe;border-radius:12px;padding:8px 12px;margin-top:10px}
+  .opt{display:block;width:100%;text-align:left;background:#f1f5f9;color:#0f172a;border:2px solid #e2e8f0;border-radius:14px;padding:12px 16px;font-size:16px;font-weight:600;margin-top:10px;cursor:pointer}
+  .opt:hover:not([disabled]){border-color:#38bdf8;background:#e0f2fe}
+  .opt[disabled]{cursor:default}
+  .opt.ok{background:#d1fae5;border-color:#10b981;color:#065f46}
+  .opt.bad{background:#ffe4e6;border-color:#f43f5e;color:#9f1239}
+  .opt b{display:inline-block;width:26px}
+  .why{margin-top:14px;padding:12px 16px;border-radius:14px;background:#f0f9ff;color:#0c4a6e;font-size:15px;line-height:1.5}
+  .qnext{background:#0f172a;margin-top:14px}
+  .qres{text-align:center;padding:10px 0}
+  .qres .big{font-size:56px;font-weight:900}
+  .qres p{color:#475569;margin-top:6px}
+  .miss{text-align:left;margin-top:18px;border-top:1px solid #e2e8f0;padding-top:12px}
+  .miss h3{font-size:16px;margin-bottom:8px}
+  .miss li{font-size:14px;color:#334155;margin:0 0 8px 20px;line-height:1.5}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="tag" id="hTag">⚡ DC Circuit Explorer</div>
+      <h1 id="hTitle">Battery and Resistor</h1>
+      <p id="hDesc">Adjust voltage and resistance. Watch current speed and resistor heating change instantly.</p>
+    </div>
+    <div class="btns" id="dcBtns">
+      <button id="sw" class="sw">Switch ON</button>
+      <button id="reset" class="rst">↺ Reset</button>
+    </div>
+    <div class="btns hidden" id="acBtns">
+      <button id="asw" class="sw">Switch ON</button>
+      <button id="areset" class="rst">↺ Reset</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" id="tabDC">DC Circuit</button>
+    <button class="tab" id="tabAC">AC Circuit</button>
+    <button class="tab quiz" id="tabQuiz">📝 Take Quiz</button>
+  </div>
+
+  <div id="acBanner" class="card" style="background:#fef9c3;border:3px solid #eab308;text-align:center;font-size:18px;font-weight:700">
+    ➜ The AC circuit is here: <button id="goAC" style="background:#0f172a;margin-left:8px">Open AC Circuit</button>
+  </div>
+
+  <!-- ===================== DC VIEW ===================== -->
+  <div id="dcView" class="wrap" style="gap:20px">
+    <div class="grid">
+      <div class="card">
+        <div class="top">
+          <div><h2>Live circuit</h2><p class="sub">Conventional current flows from + to −.</p></div>
+          <span id="badge" class="badge">CLOSED</span>
+        </div>
+        <div class="stage">
+          <svg viewBox="0 0 760 390" aria-label="Simple series circuit with battery, switch, wires and resistor">
+            <defs>
+              <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur id="blur" stdDeviation="4" result="b"/>
+                <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="resg" x1="0" x2="1">
+                <stop id="g0" offset="0" stop-color="#d1d5db"/>
+                <stop id="g1" offset=".5" stop-color="#f8fafc"/>
+                <stop id="g2" offset="1" stop-color="#94a3b8"/>
+              </linearGradient>
+            </defs>
+            <path id="loop" d="M150 90 H610 V300 H150 V90" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"/>
+            <rect x="110" y="155" width="80" height="90" rx="16" fill="#e2e8f0" stroke="#0f172a" stroke-width="5"/>
+            <rect x="125" y="140" width="50" height="18" rx="5" fill="#fbbf24"/>
+            <rect x="127" y="175" width="18" height="50" rx="5" fill="#ef4444"/>
+            <rect x="155" y="188" width="7" height="24" rx="3" fill="#334155"/>
+            <text id="batt" x="150" y="268" fill="#e2e8f0" text-anchor="middle" font-size="18" font-weight="700">12.0 V BATTERY</text>
+            <rect x="300" y="82" width="170" height="16" fill="#0f172a"/>
+            <line x1="310" y1="90" x2="360" y2="90" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"/>
+            <circle cx="375" cy="90" r="9" fill="#f8fafc"/>
+            <circle cx="455" cy="90" r="9" fill="#f8fafc"/>
+            <line id="sw-arm" class="sw-arm" x1="375" y1="90" x2="447" y2="90" stroke="#f8fafc" stroke-width="7" stroke-linecap="round"/>
+            <line x1="462" y1="90" x2="610" y2="90" stroke="#38bdf8" stroke-width="7"/>
+            <text x="415" y="42" fill="#cbd5e1" text-anchor="middle" font-size="16">SWITCH</text>
+            <rect x="435" y="288" width="215" height="24" fill="#0f172a"/>
+            <g filter="url(#glow)">
+              <line x1="435" y1="300" x2="480" y2="300" stroke="#38bdf8" stroke-width="7"/>
+              <path d="M480 300 l12 -22 l20 44 l20 -44 l20 44 l20 -44 l20 44 l20 -44 l20 22" fill="none" stroke="url(#resg)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+              <line x1="632" y1="300" x2="650" y2="300" stroke="#38bdf8" stroke-width="7"/>
+            </g>
+            <text id="resl" x="555" y="355" fill="#e2e8f0" text-anchor="middle" font-size="18" font-weight="700">RESISTOR 10.0 Ω</text>
+            <g id="dots"></g>
+          </svg>
+          <div class="hud"><small>⏱ Current flow</small><b id="hudI">1.20 A</b></div>
+          <div class="stat"><b id="stL">Warm</b><span id="stD">Moderate heat produced</span></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card ctrl">
+          <div>
+            <div class="row"><label for="v">Voltage</label><span class="pill pv" id="vOut">12.0 V</span></div>
+            <input id="v" type="range" min="1" max="24" step="0.5" value="12">
+            <div class="lim"><span>1 V</span><span>24 V</span></div>
+          </div>
+          <div>
+            <div class="row"><label for="r">Resistance</label><span class="pill pr" id="rOut">10.0 Ω</span></div>
+            <input id="r" type="range" min="1" max="50" step="1" value="10">
+            <div class="lim"><span>1 Ω</span><span>50 Ω</span></div>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile t1"><p>Voltage</p><span class="n" id="tV">12.0</span><span class="u">V</span><small>volts</small></div>
+          <div class="tile t2"><p>Resistance</p><span class="n" id="tR">10.0</span><span class="u">Ω</span><small>ohms</small></div>
+          <div class="tile t3"><p>Current</p><span class="n" id="tI">1.20</span><span class="u">A</span><small>amperes</small></div>
+          <div class="tile t4"><p>Power / Heat</p><span class="n" id="tP">14.40</span><span class="u">W</span><small>watts</small></div>
+        </div>
+
+        <div class="card calc">
+          <h3>🔋 Live calculations</h3>
+          <div class="lb">Ohm’s law</div>
+          <div class="f"><b>I = V ÷ R</b><span id="c1"></span></div>
+          <hr>
+          <div class="lb">Resistor power loss</div>
+          <div class="f"><b>P = I²R</b><span id="c2"></span></div>
+          <div class="bar"><div id="bar" class="barfill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card lessons">
+      <div class="ls"><div class="num">1</div><div><h3>Increase voltage</h3><p>Current increases, the dots move faster, and the resistor produces more heat.</p></div></div>
+      <div class="ls"><div class="num">2</div><div><h3>Increase resistance</h3><p>Current decreases because it becomes harder for charge to flow.</p></div></div>
+      <div class="ls"><div class="num">3</div><div><h3>Observe power</h3><p>Electrical power converted to heat is P = I²R, measured in watts.</p></div></div>
+    </div>
+    <div class="card quizcard" id="dcQuiz">
+      <div class="qhead">
+        <div><h2>📝 DC Circuit Quiz</h2><p class="sub">10 questions. Tap an answer to see if you are right.</p></div>
+        <span class="badge" id="dcQScore">Score 0</span>
+      </div>
+      <div id="dcQBody"></div>
+    </div>
+  </div>
+
+  <!-- ===================== AC VIEW ===================== -->
+  <div id="acView" class="wrap hidden" style="gap:20px">
+    <div class="grid">
+      <div class="stack">
+        <div class="card">
+          <div class="top">
+            <div><h2>Live AC circuit</h2><p class="sub">The current keeps reversing direction. The arrow and dots flip with it.</p></div>
+            <span id="abadge" class="badge">CLOSED</span>
+          </div>
+          <div class="stage">
+            <svg viewBox="0 0 760 390" aria-label="Simple AC series circuit with an AC source and a resistor">
+              <defs>
+                <filter id="aglow" x="-50%" y="-50%" width="200%" height="200%">
+                  <feGaussianBlur id="ablur" stdDeviation="4" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <linearGradient id="aresg" x1="0" x2="1">
+                  <stop id="ag0" offset="0" stop-color="#d1d5db"/>
+                  <stop id="ag1" offset=".5" stop-color="#f8fafc"/>
+                  <stop id="ag2" offset="1" stop-color="#94a3b8"/>
+                </linearGradient>
+              </defs>
+              <path id="aloop" d="M150 90 H610 V300 H150 V90" fill="none" stroke="#38bdf8" stroke-width="7" stroke-linecap="round"/>
+              <!-- Current arrow -->
+              <text x="380" y="30" fill="#cbd5e1" text-anchor="middle" font-size="16">CURRENT DIRECTION</text>
+              <g id="aArrow" transform="translate(380,58)">
+                <path d="M-45 0 H34 M16 -14 L36 0 L16 14" fill="none" stroke="#fde047" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <!-- Resistor -->
+              <rect x="435" y="288" width="215" height="24" fill="#0f172a"/>
+              <g filter="url(#aglow)">
+                <line x1="435" y1="300" x2="480" y2="300" stroke="#38bdf8" stroke-width="7"/>
+                <path d="M480 300 l12 -22 l20 44 l20 -44 l20 44 l20 -44 l20 44 l20 -44 l20 22" fill="none" stroke="url(#aresg)" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+                <line x1="632" y1="300" x2="650" y2="300" stroke="#38bdf8" stroke-width="7"/>
+              </g>
+              <text id="aresl" x="555" y="355" fill="#e2e8f0" text-anchor="middle" font-size="18" font-weight="700">RESISTOR 10.0 Ω</text>
+              <g id="adots"></g>
+              <!-- AC source -->
+              <circle cx="150" cy="195" r="52" fill="#e2e8f0" stroke="#0f172a" stroke-width="5"/>
+              <path d="M118 195 C128 160, 140 160, 150 195 S172 230, 182 195" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round"/>
+              <text id="aPlusTop" x="178" y="136" fill="#fde047" font-size="26" font-weight="900">+</text>
+              <text id="aPlusBot" x="178" y="266" fill="#94a3b8" font-size="26" font-weight="900">−</text>
+              <text id="asrc" x="150" y="288" fill="#e2e8f0" text-anchor="middle" font-size="16" font-weight="700">AC SOURCE</text>
+            </svg>
+            <div class="hud"><small>⏱ Current right now</small><b id="ahudI">0.00 A</b><small id="ahudV">0.0 V</small></div>
+            <div class="stat"><b id="astL">Warm</b><span id="astD">Moderate heat produced</span></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="top">
+            <div><h2>Waveform</h2><p class="sub">Two full cycles. The white dot shows where we are right now.</p></div>
+          </div>
+          <canvas id="scope" width="1520" height="400" aria-label="Voltage and current waveform"></canvas>
+          <div class="legend">
+            <span><i style="background:#38bdf8"></i>Voltage (V)</span>
+            <span><i style="background:#fde047"></i>Current (A, drawn to its own scale)</span>
+            <span><i style="background:#f97316"></i>RMS level</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card ctrl">
+          <div>
+            <div class="row"><label for="av">Peak voltage</label><span class="pill pv" id="avOut">12.0 V</span></div>
+            <input id="av" type="range" min="1" max="24" step="0.5" value="12">
+            <div class="lim"><span>1 V</span><span>24 V</span></div>
+          </div>
+          <div>
+            <div class="row"><label for="ar">Resistance</label><span class="pill pr" id="arOut">10.0 Ω</span></div>
+            <input id="ar" type="range" min="1" max="50" step="1" value="10">
+            <div class="lim"><span>1 Ω</span><span>50 Ω</span></div>
+          </div>
+          <div>
+            <div class="row"><label for="af">Frequency</label><span class="pill pf" id="afOut">1.0 Hz</span></div>
+            <input id="af" type="range" min="0.2" max="5" step="0.1" value="1">
+            <div class="lim"><span>0.2 Hz</span><span>5 Hz</span></div>
+            <p class="note">Slowed down so you can see it. Real mains power is 50 Hz, far too fast to watch.</p>
+          </div>
+        </div>
+
+        <div class="tiles">
+          <div class="tile t1"><p>Peak voltage</p><span class="n" id="atVp">12.0</span><span class="u">V</span><small>volts (peak)</small></div>
+          <div class="tile t5"><p>Frequency</p><span class="n" id="atF">1.0</span><span class="u">Hz</span><small>hertz</small></div>
+          <div class="tile t6"><p>RMS voltage</p><span class="n" id="atVr">8.49</span><span class="u">V</span><small>volts (RMS)</small></div>
+          <div class="tile t2"><p>Resistance</p><span class="n" id="atR">10.0</span><span class="u">Ω</span><small>ohms</small></div>
+          <div class="tile t3"><p>RMS current</p><span class="n" id="atIr">0.85</span><span class="u">A</span><small>amperes (RMS)</small></div>
+          <div class="tile t4"><p>Average power</p><span class="n" id="atP">7.20</span><span class="u">W</span><small>watts</small></div>
+        </div>
+
+        <div class="card calc">
+          <h3>🔌 Live calculations</h3>
+          <div class="lb">RMS voltage</div>
+          <div class="f"><b>Vrms = Vpeak ÷ √2</b></div>
+          <div class="f"><span id="ac0" style="margin-left:auto"></span></div>
+          <hr>
+          <div class="lb">RMS current (Ohm’s law)</div>
+          <div class="f"><b>Irms = Vrms ÷ R</b></div>
+          <div class="f"><span id="ac1" style="margin-left:auto"></span></div>
+          <hr>
+          <div class="lb">Average resistor power loss</div>
+          <div class="f"><b>P = Irms²R</b></div>
+          <div class="f"><span id="ac2" style="margin-left:auto"></span></div>
+          <div class="bar"><div id="abar" class="barfill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card lessons">
+      <div class="ls"><div class="num">1</div><div><h3>Current reverses</h3><p>The source swaps + and − every half cycle, so the current arrow and dots keep changing direction.</p></div></div>
+      <div class="ls"><div class="num">2</div><div><h3>RMS gives the heating</h3><p>RMS is the steady DC value that would heat the resistor equally. It is the peak divided by √2.</p></div></div>
+      <div class="ls"><div class="num">3</div><div><h3>Frequency does not change heat</h3><p>For a plain resistor, a faster swing changes how quickly the current reverses, not the average power.</p></div></div>
+    </div>
+    <div class="card quizcard" id="acQuiz">
+      <div class="qhead">
+        <div><h2>📝 AC Circuit Quiz</h2><p class="sub">10 questions. Tap an answer to see if you are right.</p></div>
+        <span class="badge" id="acQScore">Score 0</span>
+      </div>
+      <div id="acQBody"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var NS = "http://www.w3.org/2000/svg";
+
+  /* ---------- shared helpers ---------- */
+  // Loop: (150,90) -> (610,90) -> (610,300) -> (150,300) -> back
+  var SEG = [[150, 90, 610, 90], [610, 90, 610, 300], [610, 300, 150, 300], [150, 300, 150, 90]];
+  var TOTAL = 460 + 210 + 460 + 210;
+  function pointAt(s) {
+    s = ((s % TOTAL) + TOTAL) % TOTAL;
+    for (var i = 0; i < SEG.length; i++) {
+      var g = SEG[i], len = Math.abs(g[2] - g[0]) + Math.abs(g[3] - g[1]);
+      if (s <= len) { var t = s / len; return { x: g[0] + (g[2] - g[0]) * t, y: g[1] + (g[3] - g[1]) * t }; }
+      s -= len;
+    }
+    return { x: 150, y: 90 };
+  }
+  function makeDots(groupId, filterId, n) {
+    var list = [], ph = [];
+    for (var i = 0; i < n; i++) {
+      var c = document.createElementNS(NS, "circle");
+      c.setAttribute("r", "6"); c.setAttribute("fill", "#fde047");
+      c.setAttribute("filter", "url(#" + filterId + ")");
+      $(groupId).appendChild(c); list.push(c); ph.push(i / n * TOTAL);
+    }
+    return { list: list, ph: ph };
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function mix(c1, c2, t) {
+    var p = function (h) { return [1, 3, 5].map(function (k) { return parseInt(h.substr(k, 2), 16); }); };
+    var a = p(c1), b = p(c2);
+    return "rgb(" + a.map(function (v, k) { return Math.round(lerp(v, b[k], t)); }).join(",") + ")";
+  }
+  function setResistor(p, closed, heat) {
+    $(p + "blur").setAttribute("stdDeviation", closed ? 2 + heat * 14 : 0);
+    var mid = heat > .75 ? "#fff7ed" : heat > .2 ? "#fbbf24" : "#f8fafc";
+    $(p + "g0").setAttribute("stop-color", closed ? mix("#d1d5db", "#fb923c", Math.min(1, heat / .45)) : "#94a3b8");
+    $(p + "g1").setAttribute("stop-color", closed ? mid : "#94a3b8");
+    $(p + "g2").setAttribute("stop-color", closed ? mix("#94a3b8", "#ef4444", Math.min(1, heat / .45)) : "#94a3b8");
+  }
+  function setStatus(labelEl, detailEl, closed, P) {
+    if (!closed) { labelEl.textContent = "Circuit open"; detailEl.textContent = "No current is flowing"; labelEl.style.color = "#94a3b8"; }
+    else if (P < 5) { labelEl.textContent = "Cool"; detailEl.textContent = "Low heat produced"; labelEl.style.color = "#22d3ee"; }
+    else if (P < 25) { labelEl.textContent = "Warm"; detailEl.textContent = "Moderate heat produced"; labelEl.style.color = "#fbbf24"; }
+    else { labelEl.textContent = "Hot"; detailEl.textContent = "High heat produced"; labelEl.style.color = "#f87171"; }
+  }
+
+  /* ---------- DC circuit ---------- */
+  var dc = { closed: true, v: 12, r: 10, speed: 0 };
+  var dcDots = makeDots("dots", "glow", 12);
+
+  function dcUpdate() {
+    var I = dc.closed ? dc.v / dc.r : 0;
+    var P = dc.closed ? I * I * dc.r : 0;
+    var heat = Math.min(1, P / 80);
+    dc.speed = dc.closed ? Math.min(900, Math.max(15, I * 110)) : 0;
+
+    $("vOut").textContent = dc.v.toFixed(1) + " V";
+    $("rOut").textContent = dc.r.toFixed(1) + " Ω";
+    $("tV").textContent = dc.v.toFixed(1);
+    $("tR").textContent = dc.r.toFixed(1);
+    $("tI").textContent = I.toFixed(2);
+    $("tP").textContent = P.toFixed(2);
+    $("hudI").textContent = I.toFixed(2) + " A";
+    $("batt").textContent = dc.v.toFixed(1) + " V BATTERY";
+    $("resl").textContent = "RESISTOR " + dc.r.toFixed(1) + " Ω";
+    $("resl").setAttribute("fill", heat > .55 ? "#fb923c" : "#e2e8f0");
+    $("c1").textContent = dc.v.toFixed(1) + " V ÷ " + dc.r.toFixed(1) + " Ω = " + I.toFixed(2) + " A";
+    $("c2").textContent = I.toFixed(2) + "² A × " + dc.r.toFixed(1) + " Ω = " + P.toFixed(2) + " W";
+    $("bar").style.width = Math.max(2, P / (24 * 24) * 100) + "%";
+
+    setResistor("", dc.closed, heat);
+    $("sw-arm").setAttribute("y2", dc.closed ? 90 : 52);
+    $("loop").setAttribute("stroke", dc.closed ? "#38bdf8" : "#64748b");
+    $("sw").textContent = dc.closed ? "Switch ON" : "Switch OFF";
+    $("sw").className = dc.closed ? "sw" : "sw off";
+    $("badge").textContent = dc.closed ? "CLOSED" : "OPEN";
+    $("badge").className = dc.closed ? "badge" : "badge off";
+    dcDots.list.forEach(function (d) { d.style.display = dc.closed ? "" : "none"; });
+    setStatus($("stL"), $("stD"), dc.closed, P);
+  }
+
+  $("v").addEventListener("input", function (e) { dc.v = Number(e.target.value); dcUpdate(); });
+  $("r").addEventListener("input", function (e) { dc.r = Number(e.target.value); dcUpdate(); });
+  $("sw").addEventListener("click", function () { dc.closed = !dc.closed; dcUpdate(); });
+  $("reset").addEventListener("click", function () {
+    dc.v = 12; dc.r = 10; dc.closed = true; $("v").value = 12; $("r").value = 10; dcUpdate();
+  });
+
+  /* ---------- AC circuit ---------- */
+  var ac = { closed: true, vp: 12, r: 10, f: 1, cycles: 0 };
+  var acDots = makeDots("adots", "aglow", 12);
+  var SQ2 = Math.SQRT2;
+
+  function acCalc() {
+    var vrms = ac.vp / SQ2, irms = vrms / ac.r;
+    return { vrms: vrms, irms: irms, ipk: ac.vp / ac.r, P: ac.closed ? irms * irms * ac.r : 0 };
+  }
+
+  function acUpdate() {
+    var c = acCalc();
+    var heat = Math.min(1, c.P / 80);
+    $("avOut").textContent = ac.vp.toFixed(1) + " V";
+    $("arOut").textContent = ac.r.toFixed(1) + " Ω";
+    $("afOut").textContent = ac.f.toFixed(1) + " Hz";
+    $("atVp").textContent = ac.vp.toFixed(1);
+    $("atF").textContent = ac.f.toFixed(1);
+    $("atVr").textContent = c.vrms.toFixed(2);
+    $("atR").textContent = ac.r.toFixed(1);
+    $("atIr").textContent = (ac.closed ? c.irms : 0).toFixed(2);
+    $("atP").textContent = c.P.toFixed(2);
+    $("aresl").textContent = "RESISTOR " + ac.r.toFixed(1) + " Ω";
+    $("aresl").setAttribute("fill", heat > .55 ? "#fb923c" : "#e2e8f0");
+    $("ac0").textContent = ac.vp.toFixed(1) + " V ÷ 1.414 = " + c.vrms.toFixed(2) + " V";
+    $("ac1").textContent = c.vrms.toFixed(2) + " V ÷ " + ac.r.toFixed(1) + " Ω = " + c.irms.toFixed(2) + " A";
+    $("ac2").textContent = c.irms.toFixed(2) + "² A × " + ac.r.toFixed(1) + " Ω = " + c.P.toFixed(2) + " W";
+    $("abar").style.width = Math.max(2, c.P / (24 * 24 / 2) * 100) + "%";
+
+    setResistor("a", ac.closed, heat);
+    $("aloop").setAttribute("stroke", ac.closed ? "#38bdf8" : "#64748b");
+    $("asw").textContent = ac.closed ? "Switch ON" : "Switch OFF";
+    $("asw").className = ac.closed ? "sw" : "sw off";
+    $("abadge").textContent = ac.closed ? "CLOSED" : "OPEN";
+    $("abadge").className = ac.closed ? "badge" : "badge off";
+    acDots.list.forEach(function (d) { d.style.display = ac.closed ? "" : "none"; });
+    $("aArrow").style.display = ac.closed ? "" : "none";
+    setStatus($("astL"), $("astD"), ac.closed, c.P);
+  }
+
+  $("av").addEventListener("input", function (e) { ac.vp = Number(e.target.value); acUpdate(); });
+  $("ar").addEventListener("input", function (e) { ac.r = Number(e.target.value); acUpdate(); });
+  $("af").addEventListener("input", function (e) { ac.f = Number(e.target.value); acUpdate(); });
+  $("asw").addEventListener("click", function () { ac.closed = !ac.closed; acUpdate(); });
+  $("areset").addEventListener("click", function () {
+    ac.vp = 12; ac.r = 10; ac.f = 1; ac.closed = true;
+    $("av").value = 12; $("ar").value = 10; $("af").value = 1; acUpdate();
+  });
+
+  // Scope (waveform)
+  var cv = $("scope"), cx = cv.getContext("2d");
+  var SW = 760, SH = 200;
+  cx.scale(cv.width / SW, cv.height / SH);
+  function drawScope(s) {
+    var c = acCalc(), W = SW, H = SH, mid = H / 2, amp = H / 2 - 16;
+    cx.clearRect(0, 0, W, H);
+    cx.fillStyle = "#0f172a"; cx.fillRect(0, 0, W, H);
+    // grid
+    cx.strokeStyle = "rgba(148,163,184,.18)"; cx.lineWidth = 1;
+    for (var k = 0; k <= 4; k++) { var gx = k * W / 4; cx.beginPath(); cx.moveTo(gx, 0); cx.lineTo(gx, H); cx.stroke(); }
+    cx.beginPath(); cx.moveTo(0, mid); cx.lineTo(W, mid); cx.strokeStyle = "rgba(226,232,240,.55)"; cx.stroke();
+    // RMS levels
+    var yr = amp * (c.vrms / 24);
+    cx.setLineDash([6, 5]); cx.strokeStyle = "#f97316"; cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(0, mid - yr); cx.lineTo(W, mid - yr); cx.moveTo(0, mid + yr); cx.lineTo(W, mid + yr); cx.stroke();
+    cx.setLineDash([]);
+    cx.fillStyle = "#f97316"; cx.font = "bold 12px Segoe UI, Arial";
+    cx.fillText("+" + c.vrms.toFixed(1) + " V RMS", 8, mid - yr - 5);
+    cx.fillText("−" + c.vrms.toFixed(1) + " V RMS", 8, mid + yr + 15);
+    // axis labels
+    cx.fillStyle = "#94a3b8"; cx.fillText("0 V", W - 30, mid - 5);
+    cx.fillText("+" + ac.vp.toFixed(0) + " V peak", W - 82, 14);
+    // voltage trace
+    var vs = amp * (ac.vp / 24);
+    cx.lineWidth = 3; cx.strokeStyle = "#38bdf8"; cx.beginPath();
+    for (var x = 0; x <= W; x += 2) {
+      var y = mid - vs * Math.sin(2 * Math.PI * 2 * x / W);
+      if (x === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+    }
+    cx.stroke();
+    // current trace (own scale, in phase with voltage)
+    if (ac.closed) {
+      var is = amp * 0.7;
+      cx.lineWidth = 2.5; cx.strokeStyle = "#fde047"; cx.beginPath();
+      for (var x2 = 0; x2 <= W; x2 += 2) {
+        var y2 = mid - is * Math.sin(2 * Math.PI * 2 * x2 / W);
+        if (x2 === 0) cx.moveTo(x2, y2); else cx.lineTo(x2, y2);
+      }
+      cx.stroke();
+    }
+    // marker
+    var frac = (s.cycles % 2) / 2, mx = frac * W;
+    var my = mid - vs * Math.sin(2 * Math.PI * 2 * mx / W);
+    cx.strokeStyle = "rgba(255,255,255,.45)"; cx.lineWidth = 1.5;
+    cx.beginPath(); cx.moveTo(mx, 0); cx.lineTo(mx, H); cx.stroke();
+    cx.fillStyle = "#fff"; cx.beginPath(); cx.arc(mx, my, 6, 0, 6.2832); cx.fill();
+  }
+
+
+  /* ---------- quizzes ---------- */
+  function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+  function pick(a) { return a[Math.floor(Math.random() * a.length)]; }
+  function fmt(n) { return String(Math.round(n * 100) / 100); }
+  function wrongs(correct, cands, unit) {
+    var seen = {}; seen[fmt(correct)] = 1; var out = [];
+    shuffle(cands.slice()).concat([correct * 3, correct + 7, correct * 5, correct + 11]).forEach(function (c) {
+      var k = fmt(c);
+      if (isFinite(c) && c > 0 && !seen[k] && out.length < 3) { seen[k] = 1; out.push(k + " " + unit); }
+    });
+    return out;
+  }
+
+  function dcQuestions() {
+    var V = pick([6, 12, 18, 24]), R = pick([2, 3, 4, 6]), I1 = V / R;
+    var I = pick([1, 2, 3]), R2 = pick([2, 4, 5, 8]), P = I * I * R2, Vneed = I * R2;
+    return [
+      { q: "Which formula is Ohm’s law?", c: "I = V ÷ R", w: ["I = V × R", "I = R ÷ V", "I = V + R"],
+        why: "Current equals voltage divided by resistance. More voltage pushes more current. More resistance lets less through." },
+      { q: "The resistance stays the same and you double the voltage. What happens to the current?", c: "It doubles", w: ["It is cut in half", "It stays the same", "It becomes four times bigger"],
+        why: "Since I = V ÷ R, current is directly proportional to voltage.", tip: "Try it: move the Voltage slider and watch the Current tile." },
+      { q: "The voltage stays the same and you double the resistance. What happens to the current?", c: "It is cut in half", w: ["It doubles", "It stays the same", "It drops to one quarter"],
+        why: "More resistance makes it harder for charge to flow, so current falls. Double R means half the current." },
+      { q: "What is the unit of resistance?", c: "Ohm (Ω)", w: ["Volt (V)", "Ampere (A)", "Watt (W)"],
+        why: "Volts measure voltage, amperes measure current, watts measure power, and ohms measure resistance." },
+      { q: "Which formula gives the power turned into heat in the resistor?", c: "P = I²R", w: ["P = I ÷ R", "P = V + I", "P = R ÷ I²"],
+        why: "Heat power equals current squared times resistance, measured in watts." },
+      { q: "The switch is OPEN. What is the current in the circuit?", c: "0 A", w: ["The same as before", "Double", "It depends on the resistor"],
+        why: "An open switch breaks the loop, so charge cannot flow around it.", tip: "Try it: press Switch OFF and look at the Current tile." },
+      { q: "The current through a resistor doubles. What happens to the heat power (P = I²R)?", c: "It becomes 4 times bigger", w: ["It doubles", "It stays the same", "It is cut in half"],
+        why: "Current is squared, so 2² = 4. This is why the resistor glows much hotter when you raise the voltage." },
+      { q: "In this app, conventional current flows from…", c: "The + terminal to the − terminal", w: ["The − terminal to the + terminal", "The resistor to the switch only", "Nowhere, it stays still"],
+        why: "By convention, current is drawn flowing from + to −." },
+      { q: "A " + V + " V battery is connected to a " + R + " Ω resistor. What is the current?", c: fmt(I1) + " A",
+        w: wrongs(I1, [V * R, R / V, V + R, V - R, I1 * 2, I1 / 2], "A"),
+        why: "I = V ÷ R = " + V + " ÷ " + R + " = " + fmt(I1) + " A.", tip: "Check it: set Voltage to " + V + " V and Resistance to " + R + " Ω, then read the Current tile." },
+      { q: "A " + R2 + " Ω resistor carries " + I + " A. How much power does it turn into heat?", c: fmt(P) + " W",
+        w: wrongs(P, [I * R2, I * I, P * 2, P / 2, I * R2 * R2], "W"),
+        why: "P = I²R = " + I + "² × " + R2 + " = " + fmt(P) + " W.", tip: "Check it: the voltage needed is I × R = " + Vneed + " V. Set Voltage to " + Vneed + " V and Resistance to " + R2 + " Ω, then read the Power tile." }
+    ];
+  }
+
+  function acQuestions() {
+    var Vp = pick([10, 12, 20, 24]), Vr = Vp / SQ2;
+    var Vp2 = pick([10, 20, 24]), R = pick([5, 10, 20]), P = Vp2 * Vp2 / (2 * R);
+    return [
+      { q: "What does ‘AC’ mean for the current?", c: "It keeps reversing direction", w: ["It flows one way only", "It is always zero", "It never changes"],
+        why: "Alternating current swings back and forth, forward then backward, many times per second.", tip: "Watch the arrow and dots on the AC circuit flip direction." },
+      { q: "Which formula gives the RMS voltage?", c: "Vrms = Vpeak ÷ √2", w: ["Vrms = Vpeak × √2", "Vrms = Vpeak ÷ 2", "Vrms = Vpeak + √2"],
+        why: "For a sine wave, RMS is the peak divided by √2, about 0.707 × peak." },
+      { q: "What does the RMS value of an AC voltage tell you?", c: "The steady DC voltage that would heat a resistor equally", w: ["The highest voltage reached", "The voltage at one instant", "The plain average voltage over a cycle"],
+        why: "The plain average of a sine wave is zero, so RMS is used instead. It matches the heating effect of DC." },
+      { q: "What is the unit of frequency?", c: "Hertz (Hz)", w: ["Ohm (Ω)", "Volt (V)", "Watt (W)"],
+        why: "1 Hz is one complete cycle per second." },
+      { q: "Mains power in Singapore is 230 V. This is an RMS value. Roughly what is the peak voltage?", c: "About 325 V", w: ["About 163 V", "About 230 V", "About 460 V"],
+        why: "Peak = RMS × √2 = 230 × 1.414, which is about 325 V." },
+      { q: "You raise the frequency but keep the peak voltage and resistance the same. What happens to the average heating of the resistor?", c: "It stays the same", w: ["It increases", "It decreases", "It drops to zero"],
+        why: "For a plain resistor, power depends on Vrms and R, not on frequency.", tip: "Try it: move the Frequency slider and watch the Average power tile." },
+      { q: "Which formula gives the RMS current through the resistor?", c: "Irms = Vrms ÷ R", w: ["Irms = Vrms × R", "Irms = R ÷ Vrms", "Irms = Vrms + R"],
+        why: "Ohm’s law works with RMS values too." },
+      { q: "Which formula gives the average power lost in the resistor?", c: "P = Irms²R", w: ["P = Irms² ÷ R", "P = Irms ÷ R", "P = Vrms + R"],
+        why: "Average heat power equals RMS current squared times resistance." },
+      { q: "An AC source has a peak voltage of " + Vp + " V. What is its RMS voltage?", c: fmt(Vr) + " V",
+        w: wrongs(Vr, [Vp * SQ2, Vp / 2, Vp, Vp * 0.9, Vp * 0.637], "V"),
+        why: "Vrms = Vpeak ÷ √2 = " + Vp + " ÷ 1.414 = " + fmt(Vr) + " V.", tip: "Check it: set Peak voltage to " + Vp + " V and read the RMS voltage tile." },
+      { q: "A " + Vp2 + " V peak AC source drives a " + R + " Ω resistor. What is the average power?", c: fmt(P) + " W",
+        w: wrongs(P, [Vp2 * Vp2 / R, Vp2 * Vp2 / (4 * R), Vp2 / R, Vp2 / (2 * R)], "W"),
+        why: "Vrms² ÷ R = (" + Vp2 + "² ÷ 2) ÷ " + R + " = " + fmt(P) + " W.", tip: "Check it: set Peak voltage to " + Vp2 + " V and Resistance to " + R + " Ω, then read the Average power tile." }
+    ];
+  }
+
+  function runQuiz(p, makeQs) {
+    var body = $(p + "QBody"), badge = $(p + "QScore");
+    var qs, i, score, missed;
+    function start() { qs = makeQs(); i = 0; score = 0; missed = []; draw(); }
+    function draw() {
+      badge.textContent = "Score " + score;
+      if (i >= qs.length) return result();
+      var q = qs[i], opts = shuffle([q.c].concat(q.w)), L = ["A", "B", "C", "D"];
+      var h = '<div class="qbar"><i style="width:' + (i / qs.length * 100) + '%"></i></div>' +
+        '<p class="sub">Question ' + (i + 1) + ' of ' + qs.length + '</p>' +
+        '<p class="qq">' + q.q + '</p>' + (q.tip ? '<p class="qtip">💡 ' + q.tip + '</p>' : '');
+      opts.forEach(function (o, k) { h += '<button class="opt" data-v="' + k + '"><b>' + L[k] + '.</b>' + o + '</button>'; });
+      h += '<div id="' + p + 'Fb"></div>';
+      body.innerHTML = h;
+      var btns = body.querySelectorAll(".opt");
+      Array.prototype.forEach.call(btns, function (b, k) {
+        b.addEventListener("click", function () {
+          var right = opts[k] === q.c;
+          Array.prototype.forEach.call(btns, function (x, m) {
+            x.disabled = true;
+            if (opts[m] === q.c) x.classList.add("ok");
+          });
+          if (right) score++; else { b.classList.add("bad"); missed.push(q); }
+          badge.textContent = "Score " + score;
+          $(p + "Fb").innerHTML = '<div class="why"><b>' + (right ? "✅ Correct. " : "❌ Not quite. ") + '</b>' + q.why + '</div>' +
+            '<button class="qnext">' + (i === qs.length - 1 ? "See results" : "Next question →") + '</button>';
+          body.querySelector(".qnext").addEventListener("click", function () { i++; draw(); });
+        });
+      });
+    }
+    function result() {
+      var n = qs.length, msg = score === n ? "Perfect score! 🎉" : score >= 8 ? "Great work!" : score >= 5 ? "Good effort. Review the missed ones below." : "Keep practising. Try the sliders, then retake the quiz.";
+      var h = '<div class="qbar"><i style="width:100%"></i></div><div class="qres"><div class="big">' + score + ' / ' + n + '</div><p>' + msg + '</p></div>';
+      if (missed.length) {
+        h += '<div class="miss"><h3>Review</h3><ul>';
+        missed.forEach(function (q) { h += '<li><b>' + q.q + '</b><br>Answer: ' + q.c + '. ' + q.why + '</li>'; });
+        h += '</ul></div>';
+      }
+      h += '<button class="qnext" id="' + p + 'Again">↺ Try again (new numbers)</button>';
+      body.innerHTML = h;
+      $(p + "Again").addEventListener("click", start);
+    }
+    start();
+  }
+  runQuiz("dc", dcQuestions);
+  runQuiz("ac", acQuestions);
+
+  /* ---------- tabs ---------- */
+  var view = "dc";
+  function show(which) {
+    view = which;
+    var isDC = which === "dc";
+    $("dcView").classList.toggle("hidden", !isDC);
+    $("acView").classList.toggle("hidden", isDC);
+    $("dcBtns").classList.toggle("hidden", !isDC);
+    $("acBtns").classList.toggle("hidden", isDC);
+    $("tabDC").classList.toggle("active", isDC);
+    $("tabAC").classList.toggle("active", !isDC);
+    $("acBanner").classList.toggle("hidden", !isDC);
+    $("hTag").textContent = isDC ? "⚡ DC Circuit Explorer" : "〰 AC Circuit Explorer";
+    $("hTitle").textContent = isDC ? "Battery and Resistor" : "AC Source and Resistor";
+    $("hDesc").textContent = isDC
+      ? "Adjust voltage and resistance. Watch current speed and resistor heating change instantly."
+      : "Adjust peak voltage, resistance and frequency. Watch the current reverse while the resistor heats.";
+  }
+  $("tabDC").addEventListener("click", function () { show("dc"); });
+  $("tabAC").addEventListener("click", function () { show("ac"); });
+  $("goAC").addEventListener("click", function () { show("ac"); });
+  $("tabQuiz").addEventListener("click", function () {
+    var el = $(view === "dc" ? "dcQuiz" : "acQuiz");
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+
+  /* ---------- animation loop ---------- */
+  var last = performance.now();
+  function frame(now) {
+    var dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (view === "dc") {
+      if (dc.closed) {
+        for (var i = 0; i < dcDots.list.length; i++) {
+          dcDots.ph[i] = (dcDots.ph[i] + dc.speed * dt) % TOTAL;
+          var p = pointAt(dcDots.ph[i]);
+          dcDots.list[i].setAttribute("cx", p.x); dcDots.list[i].setAttribute("cy", p.y);
+        }
+      }
+    } else {
+      ac.cycles += ac.f * dt;
+      var th = 2 * Math.PI * ac.cycles, s = Math.sin(th);
+      var c = acCalc();
+      var vNow = ac.vp * s, iNow = ac.closed ? c.ipk * s : 0;
+      var frac = ac.closed ? Math.abs(s) : 0;
+      if (ac.closed) {
+        var speed = iNow * 110;
+        for (var j = 0; j < acDots.list.length; j++) {
+          acDots.ph[j] = ((acDots.ph[j] + speed * dt) % TOTAL + TOTAL) % TOTAL;
+          var q = pointAt(acDots.ph[j]);
+          acDots.list[j].setAttribute("cx", q.x); acDots.list[j].setAttribute("cy", q.y);
+        }
+        var dir = s >= 0 ? 1 : -1, sz = 0.35 + 0.65 * frac;
+        $("aArrow").setAttribute("transform", "translate(380,58) scale(" + (dir * sz).toFixed(3) + ",1)");
+        $("aArrow").style.opacity = (0.25 + 0.75 * frac).toFixed(2);
+      }
+      $("ahudI").textContent = (iNow >= 0 ? "+" : "−") + Math.abs(iNow).toFixed(2) + " A";
+      $("ahudV").textContent = (vNow >= 0 ? "+" : "−") + Math.abs(vNow).toFixed(1) + " V";
+      $("aPlusTop").textContent = s >= 0 ? "+" : "−";
+      $("aPlusBot").textContent = s >= 0 ? "−" : "+";
+      $("aPlusTop").setAttribute("fill", s >= 0 ? "#fde047" : "#94a3b8");
+      $("aPlusBot").setAttribute("fill", s >= 0 ? "#94a3b8" : "#fde047");
+      drawScope(ac);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  dcUpdate(); acUpdate(); show(location.hash === "#ac" ? "ac" : "dc");
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
